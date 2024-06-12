@@ -1,0 +1,24 @@
+{
+  "name": "secret-stick",
+  "version": "1.0.0",
+  "description": "Secret Stick Driver",
+  "main": "SecretStick.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/L1uTongweiNewAccount/SecretStick.git"
+  },
+  "author": "L1uTongwei",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/L1uTongweiNewAccount/SecretStick/issues"
+  },
+  "homepage": "https://github.com/L1uTongweiNewAccount/SecretStick#readme",
+  "dependencies": {
+    "eccrypto": "^1.1.6",
+    "serialport": "^12.0.0",
+    "yargs": "^17.7.2"
+  }
+}
