@@ -48,8 +48,29 @@ function writeData(port, withiv){
                 process.exit(0);
             }
             var buf = Buffer.from(data, 'binary');
-            console.log("iv = %s\ndata = %s", buf.subarray(0, 32).toString('base64'), buf.subarray(32).toString('base64'));
+            if(withiv) console.log("iv = %s\ndata = %s", buf.subarray(0, 32).toString('base64'), buf.subarray(32).toString('base64'));
+            else console.log("data = %s", buf.toString('base64'));
             process.exit(0);
+        });
+    });
+}
+
+function parseEncryptFile(port, filename){
+    return port.drain().then((resolve, reject) => {
+        if(err) console.log(err);
+        port.on('data', (data) => {
+            fs.writeFileSync(filename, JSON.stringify({data: buf.subarray(32).toString('base64'), iv: buf.subarray(0, 32).toString('base64')}) + "\n", {flag: 'a'});
+            resolve();
+        });
+    });
+}
+
+function parseDecryptFile(port, filename){
+    return port.drain().then((resolve, reject) => {
+        if(err) console.log(err);
+        port.on('data', (data) => {
+            fs.writeFileSync(filename, data.toString('binary'), {flag: 'a'});
+            resolve();
         });
     });
 }
@@ -73,6 +94,8 @@ var argv = yargs(process.argv)
     .option('shareKeyDecrypt', {type: "boolean", describe: 'Use shared key to decrypt, --port, --publicKey, --data(File or String), --iv required.'})
     .option('encrypt', {type: "boolean", describe: 'Use private key to encrypt, --port, --data(File, String or RawString) required.'})
     .option('decrypt', {type: "boolean", describe: 'Use private key to decrypt, --port, --data(File or String), --iv required.'})
+    .option('encryptFile', {type: "boolean", describe: 'Use private key to encrypt a file, --port, --dataFile required.'})
+    .option('decryptFile', {type: "boolean", describe: 'Use private key to decrypt a file, --port, --dataFile required.'})
     .option('getPublicKey', {type: "boolean", describe: 'Get public key, --port required.'})
     .option('signature', {type: "boolean", describe: 'Sign the hashed data, --port,--data(File or String) required.'})
     .option('verify', {type: "boolean", describe: 'Verify the signature, --port, --data(File or String), --sign required.'})
@@ -92,13 +115,15 @@ var argv = yargs(process.argv)
     .option('sign', {type: "string", describe: 'Signature.', alias: 's'}).argv;
 
 var data = "";
-if(argv.dataFile || argv.dataString || argv.dataRawString){
-    if(argv.dataFile){
-        data = fs.readFileSync(argv.dataFile);
-    }else if(argv.dataString){
-        data = Buffer.from(argv.dataString, 'base64').toString('binary');
-    }else{
-        data = argv.dataRawString;
+if(!argv.encryptFile && !argv.decryptFile){
+    if(argv.dataFile || argv.dataString || argv.dataRawString){
+        if(argv.dataFile){
+            data = fs.readFileSync(argv.dataFile);
+        }else if(argv.dataString){
+            data = Buffer.from(argv.dataString, 'base64').toString('binary');
+        }else{
+            data = argv.dataRawString;
+        }
     }
 }
 
@@ -141,7 +166,7 @@ if(argv.list){
             port.write(outbuf);
             return writeData(port, false);
         }else if(argv.encrypt){
-            sprintf(outbuf, "05%s%s%s", Buffer.from(4 + data.length).toString('binary'), data);
+            sprintf(outbuf, "05%s%s", Buffer.from(4 + data.length).toString('binary'), data);
             port.write(outbuf);
             return writeData(port, true);
         }else if(argv.decrypt){
@@ -155,7 +180,7 @@ if(argv.list){
             sprintf(outbuf, "08%s%s%s", Buffer.from(4 + data.length).toString('binary'), data);
             port.write(outbuf);
             return writeData(port, false);
-        }else if(sign.verify){
+        }else if(argv.verify){
             return eccrypto.verify(fs.readFileSync(argv.publicKey).toString('ascii'), data, argv.sign).then((res) => {
                 if(!res){
                     console.log("Verify Failed.");
@@ -164,15 +189,47 @@ if(argv.list){
                 console.log("Verify Successed.");
                 process.exit(0);
             });
-        }else if(sign.close){
+        }else if(argv.close){
             port.write("10");
             return parseMassage(port, "Successed close Serial Port %s.", argv.slot, argv.port);
-        }else if(sign.clean){
+        }else if(argv.clean){
             port.write("11");
             return parseMassage(port, "Successed clean Slot %d in Serial Port %s.", argv.slot, argv.port);
-        }else if(sign.cleanAll){
+        }else if(argv.cleanAll){
             port.write("12");
             return parseMassage(port, "Successed clean all Slots in Serial Port %s.", argv.slot, argv.port);
+        }else if(argv.encryptFile){
+            var buffer = fs.readFileSync(argv.dataFile);
+            var blockNumber = Math.ceil(buffer.length / 512.0);
+            var taskList = new Array();
+            for(var i = 0; i < blockNumber; i++){
+                var l = 512 * i, r = min(512 * i + 512, buffer.length);
+                taskList.push(new Promise(() => {
+                    var _outbuf = "";
+                    var Data = Buffer.subarray(l, r).toString('binary');
+                    sprintf(_outbuf, "05%s%s", Buffer.from(4 + Data.length).toString('binary'), Data);
+                    port.write(_outbuf);
+                    return parseEncryptFile(port, argv.dataFile + ".encrypted");
+                }));
+            }
+            Promise.allSettled(taskList);
+        }else if(argv.decryptFile){
+            var buffer = fs.readFileSync(argv.dataFile).toString().split('\n');
+            var taskList = new Array();
+            for(var i = 0; i < buffer.length; i++){
+                taskList.push(((buf) => {
+                    var contents = JSON.parse(buf);
+                    return new Promise(() => {
+                        var _outbuf = "";
+                        var iv = Buffer.from(contents.iv).toString('binary');
+                        var Data = Buffer.from(contents.data).toString('binary');
+                        sprintf(_outbuf, "06%s%s%s", Buffer.from(36 + contents.data.length).toString('binary'), iv, Data);
+                        port.write(_outbuf);
+                        return parseDecryptFile(port, argv.dataFile + ".decrypted");
+                    })
+                })(buffer[i]));
+            }
+            Promise.allSettled(taskList);
         }
     });
 }
