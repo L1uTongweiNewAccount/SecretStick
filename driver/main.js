@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('node:path')
+const {SerialPort} = require('serialport');
 
 async function handleFileOpen(){
     const { canceled, filePaths } = await dialog.showOpenDialog();
@@ -8,8 +9,8 @@ async function handleFileOpen(){
     }
 }
 
-async function handleLogin(){
-    
+async function handleList(){
+    return SerialPort.list();
 }
 
 const createWindow = () => {
@@ -23,6 +24,7 @@ const createWindow = () => {
 
 app.whenReady().then(() => {
     ipcMain.handle('dialog:openFile', handleFileOpen);
+    ipcMain.handle('serial:list', handleList);
     ipcMain.handle('auth:login', handleLogin);
     ipcMain.handle('auth:logout', handleLogout);
     createWindow();
