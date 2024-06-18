@@ -1,0 +1,77 @@
+<html>
+    <head>
+        <title>SecretStick - 高效安全的加密工具</title>
+        <meta charset="UTF-8">
+        <script>
+            import 'mdui/mdui.css';
+            import 'mdui';
+            import '@mdui/icons/create.js';
+            import '@mdui/icons/enhanced-encryption.js';
+            import '@mdui/icons/share.js';
+            var slot = -1;
+            window.onload(() => {
+                function login_out_toggle(){
+                    if(document.getElementById("login_out-icon").icon == "login"){
+                        document.getElementById('login-dialog').open();
+                    }else{
+                        logout();
+                    }
+                }
+                function login(){
+                    var ret = window.electronAPI.login(parseInt(document.getElementById('login_slot').value), document.getElementById('password').value);
+                    if(ret == 1){
+                        slot = parseInt(document.getElementById('login_slot').value);
+                        document.getElementById("login_out-icon").icon = "logout";
+                        document.getElementById("app-title").innerText = "SecretStick - 当前正在使用 " + slot + " 号密码区";
+                    }
+                }
+                function logout(){
+                    slot = -1;
+                    window.electronAPI.logout();
+                    document.getElementById("login_out-icon").icon = "login";
+                    document.getElementById("app-title").innerText = "SecretStick - 当前未登录";
+                }
+            });
+        </script>
+    </head>
+    <body>
+        <mdui-top-app-bar>
+            <mdui-button-icon icon="menu"></mdui-button-icon>
+            <mdui-top-app-bar-title id="app-title">SecretStick - 当前未登录</mdui-top-app-bar-title>
+            <div style="flex-grow: 1"></div>
+            <mdui-button-icon icon="login" id="login_out-icon" onclick="login_out_toggle();"></mdui-button-icon>
+        </mdui-top-app-bar>
+        <mdui-navigation-drawer>
+            <mdui-list>
+                <mdui-list-item id="create-keypair">
+                    <mdui-icon-create></mdui-icon-create>
+                    创建一个新的密钥对
+                </mdui-list-item>
+                <mdui-list-item id="keypair-crypt">
+                    <mdui-icon-enhanced-encryption></mdui-icon-enhanced-encryption>
+                    使用密钥对加/解密内容
+                </mdui-list-item>
+                <mdui-list-item id="shared-crypt">
+                    <mdui-icon-share></mdui-icon-share>
+                    使用共享密钥加/解密内容
+                </mdui-list-item>
+            </mdui-list>
+        </mdui-navigation-drawer>
+        <mdui-dialog id="login-dialog" headline="请输入登录凭证">
+            <mdui-text-field id="login_slot" label="密码区域编号"></mdui-text-field>
+            <mdui-text-field id="password" label="密码"></mdui-text-field>
+            <mdui-button slot="action" variant="text" onclick="document.getElementById('login-dialog').close();">取消</mdui-button>
+            <mdui-button slot="action" variant="tonal" onclick="login(); document.getElementById('login-dialog').close();">登录</mdui-button>
+        </mdui-dialog>
+        <mdui-layout-main>
+            <div id="default-div">
+            </div>
+            <div id="create-div">
+            </div>
+            <div id="keypair-div">
+            </div>
+            <div id="shared-div">
+            </div>
+        </mdui-layout-main>
+    </body>
+</html>
