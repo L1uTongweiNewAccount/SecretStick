@@ -8,7 +8,7 @@
             import '@mdui/icons/create.js';
             import '@mdui/icons/enhanced-encryption.js';
             import '@mdui/icons/share.js';
-            var slot = -1;
+            var slot = -1, serialPath = "";
             window.onload(() => {
                 function login_out_toggle(){
                     if(document.getElementById("login_out-icon").icon == "login"){
@@ -17,20 +17,44 @@
                         logout();
                     }
                 }
+                function chooseSerial(){
+                    serialPath = document.getElementById("device").value;
+                }
                 function login(){
-                    var ret = window.electronAPI.login(parseInt(document.getElementById('login_slot').value), document.getElementById('password').value);
+                    var ret = window.electronAPI.login(serialPath, parseInt(document.getElementById('login_slot').value), document.getElementById('password').value);
                     if(ret == 1){
                         slot = parseInt(document.getElementById('login_slot').value);
                         document.getElementById("login_out-icon").icon = "logout";
                         document.getElementById("app-title").innerText = "SecretStick - 当前正在使用 " + slot + " 号密码区";
+                        mdui.dialog("操作成功！");
+                        return;
                     }
+                    mdui.dialog("操作失败！");
                 }
                 function logout(){
                     slot = -1;
-                    window.electronAPI.logout();
+                    window.electronAPI.logout(serialPath);
                     document.getElementById("login_out-icon").icon = "login";
                     document.getElementById("app-title").innerText = "SecretStick - 当前未登录";
+                    mdui.dialog("操作成功！");
                 }
+                var list = window.electronAPI.list();
+                var devices = 0;
+                for(var i = 0; i < list.length; i++){
+                    if(window.electronAPI.check(list[i].path)){
+                        var item = document.createElement('mdui-list-item');
+                        item.innerHTML = list[i].path +  `
+                            <mdui-radio value="` + list[i].path + `" slot="end-icon"></mdui-radio>
+                        `;
+                        document.getElementById("serial-list").appendChild(item);
+                        devices++;
+                    }
+                }
+                if(list.length == 0){
+                    document.getElementById("serial-list-div").innerText = "未找到串口设备，请检查设备连接。";
+                    document.getElementById("serial-list-confim").attributes.setNamedItem("disabled");
+                }
+                document.getElementById("serial-list-dialog").open();
             });
         </script>
     </head>
@@ -62,6 +86,13 @@
             <mdui-text-field id="password" label="密码"></mdui-text-field>
             <mdui-button slot="action" variant="text" onclick="document.getElementById('login-dialog').close();">取消</mdui-button>
             <mdui-button slot="action" variant="tonal" onclick="login(); document.getElementById('login-dialog').close();">登录</mdui-button>
+        </mdui-dialog>
+        <mdui-dialog id="serial-list-dialog" headline="请选择使用的设备">
+            <mdui-radio-group id="device">
+                <div id="serial-list-div"><mdui-list id="serial-list"></mdui-list></div>
+            </mdui-radio-group>
+            <mdui-button slot="action" variant="text" onclick="window.electronAPI.exit();">取消</mdui-button>
+            <mdui-button slot="action" variant="tonal" id="serial-list-confim" onclick="chooseSerial(); document.getElementById('serial-list-dialog').close();">选择</mdui-button>
         </mdui-dialog>
         <mdui-layout-main>
             <div id="default-div">
