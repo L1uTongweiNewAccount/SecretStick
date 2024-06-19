@@ -2,81 +2,84 @@
     <head>
         <title>SecretStick - 高效安全的加密工具</title>
         <meta charset="UTF-8">
+        <link rel="stylesheet" type="text/css" href="node_modules/mdui/mdui.css">
+        <script type="text/javascript" src="node_modules/mdui/mdui.global.js"></script>
         <script>
-            import 'mdui/mdui.css';
-            import 'mdui';
-            import '@mdui/icons/create.js';
-            import '@mdui/icons/enhanced-encryption.js';
-            import '@mdui/icons/share.js';
             var slot = -1, serialPath = "";
-            window.onload(() => {
-                function login_out_toggle(){
-                    if(document.getElementById("login_out-icon").icon == "login"){
-                        document.getElementById('login-dialog').open();
-                    }else{
-                        logout();
-                    }
+            var login_icon = '<path d="M11 7 9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/>';
+            var logout_icon = '<path d="m17 7-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>';
+            function login_out_toggle(){
+                if(slot == -1){
+                    document.getElementById('login-dialog').setAttribute('open', 'true');
+                }else{
+                    logout();
                 }
-                function chooseSerial(){
-                    serialPath = document.getElementById("device").value;
-                }
-                function login(){
-                    var ret = window.electronAPI.login(serialPath, parseInt(document.getElementById('login_slot').value), document.getElementById('password').value);
-                    if(ret == 1){
-                        slot = parseInt(document.getElementById('login_slot').value);
-                        document.getElementById("login_out-icon").icon = "logout";
-                        document.getElementById("app-title").innerText = "SecretStick - 当前正在使用 " + slot + " 号密码区";
-                        mdui.dialog("操作成功！");
-                        return;
-                    }
-                    mdui.dialog("操作失败！");
-                }
-                function logout(){
-                    slot = -1;
-                    window.electronAPI.logout(serialPath);
-                    document.getElementById("login_out-icon").icon = "login";
-                    document.getElementById("app-title").innerText = "SecretStick - 当前未登录";
+            }
+            function chooseSerial(){
+                serialPath = document.getElementById("device").value;
+            }
+            function login(){
+                var ret = window.electronAPI.login(serialPath, parseInt(document.getElementById('login_slot').value), document.getElementById('password').value);
+                if(ret == 1){
+                    slot = parseInt(document.getElementById('login_slot').value);
+                    document.getElementById("login_out-icon").innerHTML = logout_icon;
+                    document.getElementById("app-title").innerText = "SecretStick - 当前正在使用 " + slot + " 号密码区";
                     mdui.dialog("操作成功！");
+                    return;
                 }
-                var list = window.electronAPI.list();
-                var devices = 0;
-                for(var i = 0; i < list.length; i++){
-                    if(window.electronAPI.check(list[i].path)){
-                        var item = document.createElement('mdui-list-item');
-                        item.innerHTML = list[i].path +  `
-                            <mdui-radio value="` + list[i].path + `" slot="end-icon"></mdui-radio>
-                        `;
-                        document.getElementById("serial-list").appendChild(item);
-                        devices++;
+                mdui.dialog("操作失败！");
+            }
+            function logout(){
+                slot = -1;
+                window.electronAPI.logout(serialPath);
+                document.getElementById("login_out-icon").innerHTML = login_icon;
+                document.getElementById("app-title").innerText = "SecretStick - 当前未登录";
+                mdui.dialog("操作成功！");
+            }
+            window.onload = () => {
+                (async () => {
+                    var list = await window.electronAPI.list();
+                    var devices = 0;
+                    for(var i = 0; i < list.length; i++){
+                        if(window.electronAPI.check(list[i].path)){
+                            var item = document.createElement('mdui-list-item');
+                            item.innerHTML = list[i].path +  `
+                                <mdui-radio value="` + list[i].path + `" slot="end-icon"></mdui-radio>
+                            `;
+                            document.getElementById("serial-list").appendChild(item);
+                            devices++;
+                        }
                     }
-                }
-                if(list.length == 0){
-                    document.getElementById("serial-list-div").innerText = "未找到串口设备，请检查设备连接。";
-                    document.getElementById("serial-list-confim").attributes.setNamedItem("disabled");
-                }
-                document.getElementById("serial-list-dialog").open();
-            });
+                    if(list.length == 0){
+                        document.getElementById("serial-list-div").innerText = "未找到串口设备，请检查设备连接。";
+                        document.getElementById("serial-list-confim").disabled = 1;
+                    }
+                    document.getElementById("serial-list-dialog").setAttribute('open', 'true');
+                })();
+            };
         </script>
     </head>
     <body>
         <mdui-top-app-bar>
-            <mdui-button-icon icon="menu"></mdui-button-icon>
+            <mdui-button-icon><svg><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></mdui-button-icon>
             <mdui-top-app-bar-title id="app-title">SecretStick - 当前未登录</mdui-top-app-bar-title>
             <div style="flex-grow: 1"></div>
-            <mdui-button-icon icon="login" id="login_out-icon" onclick="login_out_toggle();"></mdui-button-icon>
+            <mdui-button-icon onclick="login_out_toggle();">
+                <svg id="login_out-icon"></svg>
+            </mdui-button-icon>
         </mdui-top-app-bar>
         <mdui-navigation-drawer>
             <mdui-list>
                 <mdui-list-item id="create-keypair">
-                    <mdui-icon-create></mdui-icon-create>
+                    <svg><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                     创建一个新的密钥对
                 </mdui-list-item>
                 <mdui-list-item id="keypair-crypt">
-                    <mdui-icon-enhanced-encryption></mdui-icon-enhanced-encryption>
+                    <svg><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6zM16 16h-3v3h-2v-3H8v-2h3v-3h2v3h3v2z"/></svg>
                     使用密钥对加/解密内容
                 </mdui-list-item>
                 <mdui-list-item id="shared-crypt">
-                    <mdui-icon-share></mdui-icon-share>
+                    <svg><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
                     使用共享密钥加/解密内容
                 </mdui-list-item>
             </mdui-list>
@@ -84,15 +87,15 @@
         <mdui-dialog id="login-dialog" headline="请输入登录凭证">
             <mdui-text-field id="login_slot" label="密码区域编号"></mdui-text-field>
             <mdui-text-field id="password" label="密码"></mdui-text-field>
-            <mdui-button slot="action" variant="text" onclick="document.getElementById('login-dialog').close();">取消</mdui-button>
-            <mdui-button slot="action" variant="tonal" onclick="login(); document.getElementById('login-dialog').close();">登录</mdui-button>
+            <mdui-button slot="action" variant="text" onclick="document.getElementById('login-dialog').setAttribute('close', 'true');">取消</mdui-button>
+            <mdui-button slot="action" variant="tonal" onclick="login(); document.getElementById('login-dialog').setAttribute('close', 'true');">登录</mdui-button>
         </mdui-dialog>
         <mdui-dialog id="serial-list-dialog" headline="请选择使用的设备">
             <mdui-radio-group id="device">
                 <div id="serial-list-div"><mdui-list id="serial-list"></mdui-list></div>
             </mdui-radio-group>
             <mdui-button slot="action" variant="text" onclick="window.electronAPI.exit();">取消</mdui-button>
-            <mdui-button slot="action" variant="tonal" id="serial-list-confim" onclick="chooseSerial(); document.getElementById('serial-list-dialog').close();">选择</mdui-button>
+            <mdui-button slot="action" variant="tonal" id="serial-list-confim" onclick="chooseSerial(); document.getElementById('serial-list-dialog').setAttribute('close', 'true');">选择</mdui-button>
         </mdui-dialog>
         <mdui-layout-main>
             <div id="default-div">

@@ -57,15 +57,19 @@ async function handleLogout(port){
 const createWindow = () => {
     const win = new BrowserWindow({
         title: "SecretStick",
-        width: 800,
-        height: 600
+        show: false,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js')
+        }
     });
+    win.maximize();
     win.loadFile('index.html');
+    win.show();
 }
 
 app.whenReady().then(() => {
     ipcMain.handle('dialog:openFile', handleFileOpen);
-    ipcMain.handle('app:list', handleExit);
+    ipcMain.handle('app:exit', handleExit);
     ipcMain.handle('serial:list', handleList);
     ipcMain.handle('serial:check', handleCheck);
     ipcMain.handle('auth:login', handleLogin);

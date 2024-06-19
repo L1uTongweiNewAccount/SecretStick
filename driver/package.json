@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/L1uTongweiNewAccount/SecretStick#readme",
   "dependencies": {
-    "@mdui/icons": "^1.0.2",
     "electron": "^31.0.1",
     "mdui": "^2.1.1",
     "serialport": "^12.0.0",
