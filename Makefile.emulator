@@ -1,0 +1,33 @@
+OPT = -Os -funsigned-char -Wall -Wno-pointer-sign -Wno-incompatible-pointer-types -DuECC_OPTIMIZATION_LEVEL=0 -DEMULATOR
+BUILD_DIR = build
+C_SOURCES =  \
+Src/UserCode/UserMain.c \
+Src/UserCode/tiny_sha3/sha3.c \
+Src/UserCode/tiny-AES/aes.c \
+Src/UserCode/micro-ecc/uECC.c
+C_INCLUDES =  \
+-ISrc/UserCode/tiny_sha3 \
+-ISrc/UserCode/tiny-AES \
+-ISrc/UserCode/micro-ecc \
+-Iemulator
+CFLAGS += $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
+LDFLAGS = -Wl,--gc-sections
+
+all: $(BUILD_DIR)/emulator.exe
+OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
+vpath %.c $(sort $(dir $(C_SOURCES)))
+$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
+	gcc -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
+$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+	as -c $(CFLAGS) $< -o $@
+$(BUILD_DIR)/%.o: %.S Makefile | $(BUILD_DIR)
+	as -c $(CFLAGS) $< -o $@
+$(BUILD_DIR)/emulator.exe: $(OBJECTS) Makefile
+	gcc $(OBJECTS) $(LDFLAGS) -o $@
+	size $@
+$(BUILD_DIR):
+	mkdir $@
+clean:
+	-rm -fR $(BUILD_DIR)
+-include $(wildcard $(BUILD_DIR)/*.d)

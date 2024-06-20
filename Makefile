@@ -204,6 +204,9 @@ $(BUILD_DIR):
 #######################################
 clean:
 	-rm -fR $(BUILD_DIR)
+.PHONY: emulator
+emulator:
+	make -f Makefile.emulator
   
 #######################################
 # dependencies

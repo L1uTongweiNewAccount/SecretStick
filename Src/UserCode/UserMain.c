@@ -1,4 +1,8 @@
+#ifndef EMULATOR
 #include "../../Inc/main.h"
+#else
+#include "../../emulator/emulator.h"
+#endif
 #include "tiny_sha3/sha3.h"
 #include "tiny-AES/aes.h"
 #include "micro-ecc/uECC.h"
@@ -8,8 +12,12 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifndef EMULATOR
 extern SPI_HandleTypeDef hspi1;
 extern UART_HandleTypeDef huart1;
+#else
+int hspi1 = 0, huart1 = 0;
+#endif
 
 #define recvLength 1024
 uint8_t recvBuffer[recvLength];
@@ -29,6 +37,7 @@ void SendString(char* str){
 uint8_t buf256[32], buf256_2[32], bufPublic[64], privateKey[32], publicKey[40], slotNow = -1;
 uECC_Curve curve;
 
+#ifndef EMULATOR
 void writeFRAM(uint16_t address, uint8_t* buf, uint16_t len){
     uint8_t opcode = 0b00000010;
     while(len--){
@@ -57,6 +66,7 @@ void cleanFRAM(uint16_t address, uint16_t len){
         HAL_SPI_Receive(&hspi1, &data, 1, 100);
     }
 }
+#endif
 
 char ret = '\n';
 void handler(){
