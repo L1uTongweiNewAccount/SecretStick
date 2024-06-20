@@ -73,6 +73,10 @@ void handler(){
             //slot(3, 2-4) pass(32, 5-36)
             struct AES_ctx ctx;
             uint8_t slot = (recvBuffer[2] - '0') * 100 + (recvBuffer[3] - '0') * 10 + (recvBuffer[4] - '0');
+            if(slot < 0 || slot > 101){
+                SendString("0");
+                break;
+            }
             RNG(buf256_2, 32);
             AES_init_ctx_iv(&ctx, recvBuffer + 5, buf256_2);
             uECC_make_key(publicKey, privateKey, curve);
@@ -91,6 +95,10 @@ void handler(){
             //slot(3, 2-4) pass(32, 5-36)
             struct AES_ctx ctx;
             uint8_t slot = (recvBuffer[2] - '0') * 100 + (recvBuffer[3] - '0') * 10 + (recvBuffer[4] - '0');
+            if(slot < 0 || slot > 101){
+                SendString("0");
+                break;
+            }
             memset(privateKey, 0, 21);
             memset(publicKey, 0, 40);
             readFRAM(80 * slot + 64, buf256, 16);
