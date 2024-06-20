@@ -178,25 +178,25 @@
                 }
             }
             window.onload = () => {
-                // (async () => {
-                //     var list = await window.electronAPI.list();
-                //     var devices = 0;
-                //     for(var i = 0; i < list.length; i++){
-                //         if(window.electronAPI.check(list[i].path)){
-                //             var item = document.createElement('mdui-list-item');
-                //             item.innerHTML = list[i].path +  `
-                //                 <mdui-radio value="` + list[i].path + `" slot="end-icon"></mdui-radio>
-                //             `;
-                //             document.getElementById("serial-list").appendChild(item);
-                //             devices++;
-                //         }
-                //     }
-                //     if(list.length == 0){
-                //         document.getElementById("serial-list-div").innerText = "未找到串口设备，请检查设备连接。";
-                //         document.getElementById("serial-list-confim").disabled = 1;
-                //     }
-                //     document.getElementById("serial-list-dialog").setAttribute('open', true);
-                // })();
+                (async () => {
+                    var list = await window.electronAPI.list();
+                    var devices = 0;
+                    for(var i = 0; i < list.length; i++){
+                        if(window.electronAPI.check(list[i].path)){
+                            var item = document.createElement('mdui-list-item');
+                            item.innerHTML = list[i].path +  `
+                                <mdui-radio value="` + list[i].path + `" slot="end-icon"></mdui-radio>
+                            `;
+                            document.getElementById("serial-list").appendChild(item);
+                            devices++;
+                        }
+                    }
+                    if(list.length == 0){
+                        document.getElementById("serial-list-div").innerText = "未找到串口设备，请检查设备连接。";
+                        document.getElementById("serial-list-confim").disabled = 1;
+                    }
+                    document.getElementById("serial-list-dialog").setAttribute('open', true);
+                })();
             };
         </script>
     </head>
