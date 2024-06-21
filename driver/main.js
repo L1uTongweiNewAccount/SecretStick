@@ -15,8 +15,8 @@ async function handleFileOpen(e){
 }
 
 async function handleList(e){
-    return [{path: "COM2"}];
-    //return SerialPort.list();
+    //return [{path: "COM2"}];
+    return SerialPort.list();
 }
 
 async function handleCheck(e, port){
