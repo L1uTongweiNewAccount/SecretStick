@@ -184,9 +184,10 @@
                     for(var i = 0; i < list.length; i++){
                         if(window.electronAPI.check(list[i].path)){
                             var item = document.createElement('mdui-list-item');
-                            item.innerHTML = list[i].path +  `
-                                <mdui-radio value="` + list[i].path + `" slot="end-icon"></mdui-radio>
+                            item.innerHTML = list[i].path + `
+                                <mdui-radio value="` + list[i].path + `" slot="end-icon" ></mdui-radio>
                             `;
+                            if(devices == 0) document.getElementById("device").value = list[i].path;
                             document.getElementById("serial-list").appendChild(item);
                             devices++;
                         }

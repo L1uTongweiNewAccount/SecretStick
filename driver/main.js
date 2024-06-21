@@ -7,41 +7,41 @@ const crypto = require('node:crypto');
 const eccrypto = require('eccrypto');
 const SHA256 = crypto.createHash('sha256');
 
-async function handleFileOpen(){
+async function handleFileOpen(e){
     const { canceled, filePaths } = await dialog.showOpenDialog();
     if (!canceled) {
         return fs.readFileSync(filePaths[0]);
     }
 }
 
-async function handleList(){
-    return SerialPort.list();
+async function handleList(e){
+    return [{path: "COM2"}];
+    //return SerialPort.list();
 }
 
-async function handleCheck(port){
-    var serial = new SerialPort(port, {autoOpen: false, baudRate: 115200});
-    return serial.open().then(() => {
-        serial.write(Buffer.from([0]));
-        return serial.drain().then(() => {
-            return new Promise((resolve) => {
-                serial.on('readable', () => {
-                    resolve(serial.read(7) == "SSv1.0");
-                });
-            }).then(() => {serial.close()});
+async function handleCheck(e, port){
+    var serial = new SerialPort({path: port, baudRate: 115200});
+    serial.write(Buffer.from([0]));
+    serial.drain();
+    return await new Promise((resolve) => {
+        serial.on('readable', () => {
+            var dat = serial.read(7);
+            serial.close();
+            resolve(dat == "SSv1.0");
         });
     });
 }
 
-async function handleExit(){
+async function handleExit(e){
     app.quit();
 }
 
-async function handleLogin(port, slot, password){
-    var serial = new SerialPort(port, {baudRate: 115200});
+async function handleLogin(e, port, slot, password){
+    var serial = new SerialPort({path: port, baudRate: 115200});
     SHA256.update(password);
     serial.write("02" + ((slot < 100) ? "0" : "") + toString(slot) + SHA256.digest('binary'));
     return serial.drain().then(async () => {
-        return await new Promise((resolve) => {
+        await new Promise((resolve) => {
             serial.on('readable', () => {
                 resolve(serial.read(2) == "0");
             });
@@ -50,12 +50,12 @@ async function handleLogin(port, slot, password){
     });
 }
 
-async function handleGenerate(port, slot, password){
-    var serial = new SerialPort(port, {baudRate: 115200});
+async function handleGenerate(e, port, slot, password){
+    var serial = new SerialPort({path: port, baudRate: 115200});
     SHA256.update(password);
     serial.write("01" + ((slot < 100) ? "0" : "") + toString(slot) + SHA256.digest('binary'));
     return serial.drain().then(async () => {
-        return await new Promise((resolve) => {
+        await new Promise((resolve) => {
             serial.on('readable', () => {
                 resolve(serial.read(2) == "0");
             });
@@ -64,18 +64,18 @@ async function handleGenerate(port, slot, password){
     });
 }
 
-async function handleLogout(port){
-    var serial = new SerialPort(port, {baudRate: 115200});
+async function handleLogout(e, port){
+    var serial = new SerialPort({path: port, baudRate: 115200});
     SHA256.update(password);
     serial.write("10");
     return 1;
 }
 
-async function handleSign(port, data){
-    var serial = new SerialPort(port, {baudRate: 115200});
+async function handleSign(e, port, data){
+    var serial = new SerialPort({path: port, baudRate: 115200});
     serial.write("08\0\x20" + data);
     return serial.drain().then(async () => {
-        return await new Promise((resolve) => {
+        await new Promise((resolve) => {
             serial.on('readable', () => {
                 resolve(serial.read(64));
             });
@@ -84,17 +84,17 @@ async function handleSign(port, data){
     });
 }
 
-async function handleVerify(signed, pub){
+async function handleVerify(e, signed, pub){
     return eccrypto.verify(Buffer.from(pub), Buffer.from(signed.hash, 'base64'), Buffer.from(signed.sign, 'base64'))
         .then(() => {return 1;})
         .catch(() => {return 0;});
 }
 
-async function handleDecrypt(port, data, iv){
-    var serial = new SerialPort(port, {baudRate: 115200});
+async function handleDecrypt(e, port, data, iv){
+    var serial = new SerialPort({path: port, baudRate: 115200});
     serial.write("05\x22\x02" + Buffer.from(iv, 'base64').toString('binary') + Buffer.from(data, 'base64').toString('binary'));
     return serial.drain().then(async () => {
-        return await new Promise((resolve) => {
+        await new Promise((resolve) => {
             serial.on('readable', () => {
                 var dat = Buffer.from(serial.read(544));
                 resolve(dat.toString('binary'));
@@ -104,11 +104,11 @@ async function handleDecrypt(port, data, iv){
     });
 }
 
-async function handleDecryptShared(port, pub, data, iv){
-    var serial = new SerialPort(port, {baudRate: 115200});
+async function handleDecryptShared(e, port, pub, data, iv){
+    var serial = new SerialPort({path: port, baudRate: 115200});
     serial.write("05\x24\x08" + Buffer.from(pub, 'base64').toString('binary') + Buffer.from(iv, 'base64').toString('binary') + Buffer.from(data, 'base64').toString('binary'));
     return serial.drain().then(async () => {
-        return await new Promise((resolve) => {
+        await new Promise((resolve) => {
             serial.on('readable', () => {
                 var dat = Buffer.from(serial.read(544));
                 resolve(dat.toString('binary'));
@@ -118,11 +118,11 @@ async function handleDecryptShared(port, pub, data, iv){
     });
 }
 
-async function handleEncrypt(port, data){
-    var serial = new SerialPort(port, {baudRate: 115200});
+async function handleEncrypt(e, port, data){
+    var serial = new SerialPort({path: port, baudRate: 115200});
     serial.write("05\x20\x02" + data);
     return serial.drain().then(async () => {
-        return await new Promise((resolve) => {
+        await new Promise((resolve) => {
             serial.on('readable', () => {
                 var dat = Buffer.from(serial.read(544));
                 resolve(JSON.stringify({ data: dat.subarray(0, 512), iv: dat.subarray(512, 544) }));
@@ -132,11 +132,11 @@ async function handleEncrypt(port, data){
     });
 }
 
-async function handleEncryptShared(port, pub, data){
-    var serial = new SerialPort(port, {baudRate: 115200});
+async function handleEncryptShared(e, port, pub, data){
+    var serial = new SerialPort({path: port, baudRate: 115200});
     serial.write("03\x22\x0A" + Buffer.from(pub, 'base64').toString('binary') + data);
     return serial.drain().then(async () => {
-        return await new Promise((resolve) => {
+        await new Promise((resolve) => {
             serial.on('readable', () => {
                 var dat = Buffer.from(serial.read(544));
                 resolve(JSON.stringify({ data: dat.subarray(0, 512), iv: dat.subarray(512, 544) }));
@@ -146,11 +146,11 @@ async function handleEncryptShared(port, pub, data){
     });
 }
 
-async function handleGetPublicKey(port){
-    var serial = new SerialPort(port, {baudRate: 115200});
+async function handleGetPublicKey(e, port){
+    var serial = new SerialPort({path: port, baudRate: 115200});
     serial.write("07");
     return serial.drain().then(async () => {
-        return await new Promise((resolve) => {
+        await new Promise((resolve) => {
             serial.on('readable', () => {
                 var dat = Buffer.from(serial.read(40));
                 resolve(dat.toString('base64'));

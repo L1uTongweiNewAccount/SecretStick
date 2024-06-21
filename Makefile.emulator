@@ -1,4 +1,4 @@
-OPT = -Os -funsigned-char -Wall -Wno-pointer-sign -Wno-incompatible-pointer-types -DuECC_OPTIMIZATION_LEVEL=0 -DEMULATOR
+OPT = -Og -g3 -funsigned-char -Wall -Wno-pointer-sign -Wno-incompatible-pointer-types -DuECC_OPTIMIZATION_LEVEL=0 -DEMULATOR
 BUILD_DIR = build
 C_SOURCES =  \
 Src/UserCode/UserMain.c \
